@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  
+<!-- 
+  <script type="text/javascript" src="js/vis.min.js"></script>
+  <link href="style/vis.min.css" rel="stylesheet" type="text/css" /> -->
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Mapping my life</title>
+        <link rel="stylesheet" type="text/css" href="style/bootstrap.min.css" />
+        <link rel="stylesheet" type="text/css" href="style/leaflet.css" />
+        <link rel="stylesheet" type="text/css" href="style/vis.min.css">
+        <link rel="stylesheet" type="text/css" href="style/index.css" />
+        <script type="text/javascript" src="js/leaflet-src.js"></script>
+        <script type="text/javascript" src="js/jquery.min.js"></script>
+        <script type="text/javascript" src="js/vis.min.js"></script>
+        <script type="text/javascript" src="js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="js/cozy-client.js"></script>    
+</head>
+<body>
+
+<p>
+  A basic timeline. You can move and zoom the timeline, and select items.
+</p>
+<div id="mapid"></div>
+
+<div id="visualization"></div>
+
+<script type="text/javascript">
+var streets = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoia29yZGVsb3IiLCJhIjoiY2l5Ymo4NnloMDA3ZDJ3cWt4OHV0bHFwbyJ9.jFVQwINz__6hzbUEPNP04A', {
+    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+    maxZoom: 19,
+    id: 'mapbox.streets'
+    });
+var mymap = L.map('mapid',{ layers: [ streets], zoom: 13, center: [48.866667,2.333333]});
+  // DOM element where the Timeline will be attached
+  var container = document.getElementById('visualization');
+
+  // Create a DataSet (allows two way data-binding)
+  var items = new vis.DataSet([{id: 1, content: 'item 1', start: '2014-04-20'},
+    {id: 2, content: 'item 2', start: '2014-04-14'},
+    {id: 3, content: 'item 3', start: '2014-04-18'},
+    {id: 4, content: 'item 4', start: '2014-04-16', end: '2014-04-19'},
+    {id: 5, content: 'item 5', start: '2014-04-25'},
+    {id: 6, content: 'item 6', start: '2014-04-27', type: 'point'}]);
+
+  // Configuration for the Timeline
+  var options = {};
+
+  // Create a Timeline
+  var timeline = new vis.Timeline(container, items, options);
+</script>
+</body>
+</html>

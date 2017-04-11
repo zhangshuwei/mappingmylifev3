@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="{{.Locale}}">
+    <head>
+       
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Mapping my life</title>
+        <link rel="stylesheet" type="text/css" href="style/leaflet.css" />
+        <link rel="stylesheet" type="text/css" href="style/bootstrap.min.css" />
+        <link rel="stylesheet" type="text/css" href="style/font-awesome.min.css">
+        <link rel="stylesheet" type="text/css" href="style/ionicons.min.css">
+        <link rel="stylesheet" type="text/css" href="style/leaflet.awesome-markers.css">
+        <link rel="stylesheet" type="text/css" href="style/awesome-bootstrap-checkbox.css">
+        <link rel="stylesheet" type="text/css" href="style/index.css" />
+        <link rel="stylesheet" type="text/css" href="style/vis.min.css">
+        <script type="text/javascript" src="js/leaflet-src.js"></script>
+        <script type="text/javascript" src="js/jquery.min.js"></script>
+        <script type="text/javascript" src="js/moment-with-locales.min.js"></script>
+        <script type="text/javascript" src="js/vis.min.js"></script>
+        <script type="text/javascript" src="js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="js/cozy-client.js"></script> 
+        <script type="text/javascript" src="js/leaflet.awesome-markers.min.js"></script>
+        <script type="text/javascript" src="js/leaflet.polylineDecorator.js"></script>   
+        <!-- <script src="js/cozy-bar.min.js" defer></script> -->
+    </head>
+    <body>
+<!--         <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+    <div class="navbar-header">
+        <a class="navbar-brand" href="#">Mapping My Life</a>
+    </div>
+    <ul class="nav navbar-nav">
+        <li class="active"><a href="index.html">Home</a></li>
+        <li><a href="mostmode.html">Page 1</a></li>    
+    </ul>
+    </div>
+</nav> -->
+    <div class="container-fluid">
+        <div id="mapid"></div>
+        <div class="layerSwitcher">
+            <div class="row">
+                <div class="col-sm-10">
+                    <h4>Types de données:</h4>
+                    <div class="radio radio-success radio-inline">
+                            <input type="radio" id="dayByDayRadio" name="dataType" checked>
+                            <label for="dayByDayRadio"> Jour par jour </label>
+                    </div>
+                    <div class="radio radio-success radio-inline">
+                        <input type="radio" id="agregatedRadio" name="dataType">
+                        <label for="agregatedRadio"> Agrégées </label>
+                    </div>   
+                    <!-- <div id="layerSwitcher"></div>
+                    
+                    <div id="openclose" class="close"></div> -->
+                </div>
+            </div>
+        </div>
+        <div id="filter">
+            <div  class="row"> 
+                <div class="col-sm-4">
+                    <h5>Date de début: <span id="start"></span>  <span><button class="btn btn-success btn-xs" onclick="showStartAnimate()"><span class="glyphicon glyphicon-play"></button></span></h5>                   
+                </div>
+                <div class="col-sm-4">
+                    <h5>Date de fin: <span id="end"></span> <span><button class="btn btn-success btn-xs" onclick="showEndAnimate()"><span class="glyphicon glyphicon-play"></button></span></h5>
+                </div>       
+                <div class="col-sm-4">
+                    <div class="btn-group pull-right" role="group" >
+                      <button id="zoomIn" type="button" class="btn btn-success btn-sm"><span class="glyphicon glyphicon-plus"></span></button>
+                      <button id="zoomOut" type="button" class="btn btn-success btn-sm"><span class="glyphicon glyphicon-minus"></span></button>
+                      <button id="moveLeft" type="button" class="btn btn-success btn-sm"><span class="glyphicon glyphicon-chevron-left"></span>
+                      </button>
+                      <button id="moveRight" type="button" class="btn btn-success btn-sm"><span class="glyphicon glyphicon-chevron-right"></span></button>
+                    </div>
+                </div>        
+            </div>            
+            <div id="timeline"></div>
+        </div>
+        <div id="mostmode">
+            <div class="row">
+                <div class="col-sm-10">
+                    <h4>Ajouter les endroits préférés</h4> 
+                </div>     
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    
+                    <form class="form-inline" id="pointfavorisform">
+                        <div class="form-group">
+                            <label for="latitude">Latitude</label>
+                            <input type="text" class="form-control" name="latitude" id="latitude">
+                        </div>
+                        <div class="form-group">
+                            <label for="longitude">Longitude</label>
+                            <input type="text" class="form-control" name="longitude" id="longitude">    
+                        </div>
+                        <div class="form-group">
+                            <div class="radio radio-success radio-inline">
+                                <input type="radio" name="favoris" value="maison" id="maison">
+                                <label for="maison">Maison</label>
+                            </div>
+                            <div class="radio radio-success radio-inline">
+                                <input type="radio" name="favoris" value="travail" id="travail">
+                                <label for="travail">Travail</label>
+                            </div>
+                            <div class="radio radio-success radio-inline">
+                                <input type="radio" name="favoris" value="sport" id="sport">
+                                <label for="sport">Sport</label>
+                            </div>
+                            <div class="radio radio-success radio-inline">
+                                <input type="radio" name="favoris" value="marche" id="marche">
+                                <label for="marche">Marché</label>
+                            </div>
+                        </div>
+                        <button class="btn btn-success btn-sm" id="submitForm">Submit</button>
+                    </form>              
+                </div>
+                
+            </div>
+            
+        </div>
+    </div>
+        
+        <div role="application" data-cozy-token="{{.Token}}" data-cozy-domain="{{.Domain}}" data-cozy-locale="{{.Locale}}" data-cozy-app-name="{{.AppName}}" data-cozy-icon-path="{{.IconPath}}" data-cozy-client-js="{{.CozyClientJS}}"></div>
+            <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript">init();</script>
+    </body>
+
+</html>

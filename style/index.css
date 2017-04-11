@@ -1,0 +1,131 @@
+#mapid { 
+	height: 600px;
+	/* margin: 10px 10px */
+}
+/* #timeline{
+    margin: 10px 10px
+} */
+.toolbarHead {
+    height: 32px;
+    /*margin: 10px 10px*/
+}
+.geotemplate {
+	font-size: 12px;
+
+}
+.phonetemplate{
+	font-size: 12px;
+
+}
+.vis-item.geoloc{  
+	border-color:orange; 
+  }
+.vis-item.phonecall{  
+	border-color: #78B2F9; 
+}
+.vis-item.geoloc.vis-dot {
+  	 border-width: 6px;
+    border-radius: 6px;
+  }
+.vis-item.phonecall.vis-dot {
+	 border-width: 6px;
+	border-radius: 6px;
+}
+.vis-item.vis-point.geoloc.vis-selected{
+	background-color: #EA638C;
+	
+}
+.vis-item.vis-dot.geoloc.vis-selected{
+	border-color: #D6FFB7;
+}
+.vis-item.vis-point.phonecall.vis-selected{
+	background-color: #CB48B7;
+	
+}
+.vis-item.vis-dot.phonecall.vis-selected{
+	border-color: #9EE493;
+}
+ .btn-group{
+	margin: 8px 8px;
+}
+.data-tooltip p {
+	margin: 0 0 3px;
+}
+#info { overflow: auto; max-height :150px; position: relative;}
+
+#showhide {cursor: pointer;}
+#info p{
+    margin: 2px 0
+}
+.leaflet-popup-content-wrapper {
+    width: 260px
+}
+.markerPopup {
+    margin: 18px 0
+}
+
+
+/* .navbar-inverse {
+  background: #303f9f;
+  color: #ffffff;
+}
+.navbar-inverse .navbar-nav > .active > a {
+  background: #1a237e;
+  color: #ffffff;
+}
+.navbar-inverse .navbar-nav > .active > a:hover {
+  background: #1a237e;
+  color: #ffffff;
+}
+.navbar-inverse .navbar-nav > .active > a:focus {
+  background: #1a237e;
+  color: #ffffff;
+}
+ */
+/* .menu {
+    position: absolute;
+    top: 800px;
+    right: 0;
+    margin: 10px 10px;
+    z-index: 9999;
+    
+}
+.btn-zoom-in {
+    background: url("images/plus.svg") no-repeat center;
+    background-size: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    float: left;
+    
+}
+.btn-zoom-out {
+    background: url("images/minus.svg") no-repeat center;
+    background-size: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    float: left;
+    
+}
+.btn-move-left {
+    background: url("images/leftarrow.svg") no-repeat center;
+    background-size: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    float: left;
+}
+    
+.btn-move-right {
+    background: url("images/rightarrow.svg") no-repeat center;
+    background-size: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    float: left;
+    
+}
+.timeline-button{
+	display: inline-block;
+    padding: 3px 12px;
+    vertical-align: bottom;
+    margin: 8px 0;
+} */
+
