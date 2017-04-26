@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("pouchdb"), require("pouchdb-find"));
+		module.exports = factory();
 	else if(typeof define === 'function' && define.amd)
-		define("client", ["pouchdb", "pouchdb-find"], factory);
+		define("client", [], factory);
 	else if(typeof exports === 'object')
-		exports["client"] = factory(require("pouchdb"), require("pouchdb-find"));
+		exports["client"] = factory();
 	else
-		root["cozy"] = root["cozy"] || {}, root["cozy"]["client"] = factory(root["pouchdb"], root["pouchdb-find"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_203__, __WEBPACK_EXTERNAL_MODULE_204__) {
+		root["cozy"] = root["cozy"] || {}, root["cozy"]["client"] = factory();
+})(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -740,15 +740,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var files = _interopRequireWildcard(_files);
 	
-	var _offline = __webpack_require__(202);
+	var _intents = __webpack_require__(202);
+	
+	var intents = _interopRequireWildcard(_intents);
+	
+	var _offline = __webpack_require__(203);
 	
 	var offline = _interopRequireWildcard(_offline);
 	
-	var _settings = __webpack_require__(205);
+	var _settings = __webpack_require__(204);
 	
 	var settings = _interopRequireWildcard(_settings);
 	
-	var _relations = __webpack_require__(206);
+	var _relations = __webpack_require__(205);
 	
 	var relations = _interopRequireWildcard(_relations);
 	
@@ -820,6 +824,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  destroyById: files.destroyById
 	};
 	
+	var intentsProto = {
+	  create: intents.create,
+	  createService: intents.createService
+	};
+	
 	var offlineProto = {
 	  init: offline.init,
 	  getDoctypes: offline.getDoctypes,
@@ -856,6 +865,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    this.data = {};
 	    this.files = {};
+	    this.intents = {};
 	    this.offline = {};
 	    this.settings = {};
 	    this.auth = {
@@ -883,7 +893,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._authstate = AuthNone;
 	      this._authcreds = null;
 	      this._storage = null;
-	      this._version = null;
+	      this._version = options.version || null;
 	      this._offline = null;
 	
 	      var token = options.token;
@@ -912,6 +922,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      addToProto(this, this.data, dataProto, disablePromises);
 	      addToProto(this, this.auth, authProto, disablePromises);
 	      addToProto(this, this.files, filesProto, disablePromises);
+	      addToProto(this, this.intents, intentsProto, disablePromises);
 	      addToProto(this, this.offline, offlineProto, disablePromises);
 	      addToProto(this, this.settings, settingsProto, disablePromises);
 	
@@ -983,7 +994,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var _this3 = this;
 	
 	      if (!this._version) {
-	        this._version = (0, _utils.retry)(function () {
+	        return (0, _utils.retry)(function () {
 	          return fetch(_this3._url + '/status/');
 	        }, 3)().then(function (res) {
 	          if (!res.ok) {
@@ -992,10 +1003,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return res.json();
 	          }
 	        }).then(function (status) {
-	          return status.datasystem !== undefined;
+	          _this3._version = status.datasystem !== undefined ? 2 : 3;
+	          return _this3.isV2();
 	        });
 	      }
-	      return this._version;
+	      return Promise.resolve(this._version === 2);
 	    }
 	  }]);
 	
@@ -6908,6 +6920,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 	exports.unpromiser = unpromiser;
 	exports.isPromise = isPromise;
+	exports.isOnline = isOnline;
+	exports.isOffline = isOffline;
 	exports.sleep = sleep;
 	exports.retry = retry;
 	exports.getFuzzedDelay = getFuzzedDelay;
@@ -6916,6 +6930,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.encodeQuery = encodeQuery;
 	exports.decodeQuery = decodeQuery;
 	exports.warn = warn;
+	/* global navigator */
 	var FuzzFactor = 0.3;
 	
 	function unpromiser(fn) {
@@ -6944,6 +6959,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function isPromise(value) {
 	  return !!value && typeof value.then === 'function';
+	}
+	
+	function isOnline() {
+	  return typeof navigator !== 'undefined' ? navigator.onLine : true;
+	}
+	
+	function isOffline() {
+	  return !isOnline();
 	}
 	
 	function sleep(time, args) {
@@ -7455,6 +7478,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if (!cli.isRegistered()) {
 	    return Promise.reject(new Error('Client not registered'));
 	  }
+	  if ((0, _utils.isOffline)()) {
+	    return Promise.resolve(cli);
+	  }
 	  return (0, _fetch.cozyFetchJSON)(cozy, 'GET', '/auth/register/' + cli.clientID, null, {
 	    manualAuthCredentials: {
 	      token: cli
@@ -7664,6 +7690,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }));
 	  return (0, _fetch.cozyFetchJSON)(cozy, 'POST', '/auth/access_token', body, {
 	    disableAuth: token === null,
+	    dontRetry: true,
 	    manualAuthCredentials: { client: client, token: token },
 	    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
 	  }).then(function (data) {
@@ -7778,7 +7805,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        isV2 = _ref2[0],
 	        res = _ref2[1];
 	
-	    if (res.status !== 401 || isV2 || !credentials) {
+	    if (res.status !== 400 && res.status !== 401 || isV2 || !credentials || options.dontRetry) {
 	      return res;
 	    }
 	    // we try to refresh the token only for OAuth, ie, the client defined
@@ -7789,6 +7816,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (!client || !(token instanceof _auth_v.AccessToken)) {
 	      return res;
 	    }
+	    options.dontRetry = true;
 	    return (0, _utils.retry)(function () {
 	      return (0, _auth_v.refreshToken)(cozy, client, token);
 	    }, 3)().then(function (newToken) {
@@ -7869,6 +7897,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _this.url = res.url;
 	    _this.status = res.status;
 	    _this.reason = reason;
+	
+	    Object.defineProperty(_this, 'message', {
+	      value: reason.message || (typeof reason === 'string' ? reason : JSON.stringify(reason))
+	    });
 	    return _this;
 	  }
 	
@@ -8509,7 +8541,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        lastModifiedDate = data.lastModifiedDate;
 	      }
 	    } else if (isBlob) {
-	      contentType = contentTypeOctetStream;
+	      contentType = data.type || contentTypeOctetStream;
 	    } else if (isStream) {
 	      contentType = contentTypeOctetStream;
 	    } else if (typeof data === 'string') {
@@ -8746,6 +8778,133 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.create = create;
+	exports.createService = createService;
+	
+	var _fetch = __webpack_require__(196);
+	
+	var intentClass = 'coz-intent';
+	
+	// inject iframe for service in given element
+	function injectService(url, element, data) {
+	  var document = element.ownerDocument;
+	  if (!document) throw new Error('Cannot retrieve document object from given element');
+	
+	  var window = document.defaultView;
+	  if (!window) throw new Error('Cannot retrieve window object from document');
+	
+	  var iframe = document.createElement('iframe');
+	  iframe.setAttribute('src', url);
+	  iframe.classList.add(intentClass);
+	  element.appendChild(iframe);
+	
+	  // Keeps only http://domain:port/
+	  var serviceOrigin = url.split('/', 3).join('/');
+	
+	  return new Promise(function (resolve, reject) {
+	    var handshaken = false;
+	    var messageHandler = function messageHandler(event) {
+	      if (event.origin !== serviceOrigin) return;
+	
+	      if (event.data === 'intent:ready') {
+	        handshaken = true;
+	        return event.source.postMessage(data, event.origin);
+	      }
+	
+	      window.removeEventListener('message', messageHandler);
+	      iframe.parentNode.removeChild(iframe);
+	
+	      if (event.data === 'intent:error') {
+	        return reject(new Error('Intent error'));
+	      }
+	
+	      return handshaken ? resolve(event.data) : reject(new Error('Unexpected handshake message from intent service'));
+	    };
+	
+	    window.addEventListener('message', messageHandler);
+	  });
+	}
+	
+	function create(cozy, action, type) {
+	  var data = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	  var permissions = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
+	
+	  if (!action) throw new Error('Misformed intent, "action" property must be provided');
+	  if (!type) throw new Error('Misformed intent, "type" property must be provided');
+	
+	  var createPromise = (0, _fetch.cozyFetchJSON)(cozy, 'POST', '/intents', {
+	    data: {
+	      type: 'io.cozy.intents',
+	      attributes: {
+	        action: action,
+	        type: type,
+	        data: data,
+	        permissions: permissions
+	      }
+	    }
+	  });
+	
+	  createPromise.start = function (element) {
+	    return createPromise.then(function (intent) {
+	      var service = intent.attributes.services && intent.attributes.services[0];
+	
+	      if (!service) {
+	        return Promise.reject(new Error('Unable to find a service'));
+	      }
+	
+	      return injectService(service.href, element, data);
+	    });
+	  };
+	
+	  return createPromise;
+	}
+	
+	function listenClientData(intent, window) {
+	  return new Promise(function (resolve, reject) {
+	    var messageEventListener = function messageEventListener(event) {
+	      if (event.origin !== intent.attributes.client) return;
+	
+	      window.removeEventListener('message', messageEventListener);
+	      resolve(event.data);
+	    };
+	
+	    window.addEventListener('message', messageEventListener);
+	    window.parent.postMessage('intent:ready', intent.attributes.client);
+	  });
+	}
+	
+	// returns a service to communicate with intent client
+	function createService(cozy, id, window) {
+	  return (0, _fetch.cozyFetchJSON)(cozy, 'GET', '/intents/' + id).then(function (intent) {
+	    return listenClientData(intent, window).then(function (data) {
+	      var terminated = false;
+	      return {
+	        getData: function getData() {
+	          return data;
+	        },
+	        getIntent: function getIntent() {
+	          return intent;
+	        },
+	        terminate: function terminate(doc) {
+	          if (terminated) throw new Error('Intent service has already been terminated');
+	          terminated = true;
+	          window.parent.postMessage(doc, intent.attributes.client);
+	        }
+	      };
+	    });
+	  });
+	}
+
+/***/ },
+/* 203 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.replicationOfflineError = undefined;
 	exports.init = init;
 	exports.getDoctypes = getDoctypes;
 	exports.hasDatabase = hasDatabase;
@@ -8763,17 +8922,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.stopRepeatedReplication = stopRepeatedReplication;
 	exports.stopAllRepeatedReplication = stopAllRepeatedReplication;
 	
-	var _pouchdb = __webpack_require__(203);
-	
-	var _pouchdb2 = _interopRequireDefault(_pouchdb);
-	
-	var _pouchdbFind = __webpack_require__(204);
-	
-	var _pouchdbFind2 = _interopRequireDefault(_pouchdbFind);
-	
 	var _doctypes = __webpack_require__(199);
 	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	var _auth_v = __webpack_require__(195);
+	
+	var _utils = __webpack_require__(192);
+	
+	var replicationOfflineError = exports.replicationOfflineError = 'Replication abort, your device is actually offline.'; /* global PouchDB, pouchdbFind */
+	
 	
 	var pluginLoaded = false;
 	
@@ -8792,6 +8948,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	      options = _ref$options === undefined ? {} : _ref$options,
 	      _ref$doctypes = _ref.doctypes,
 	      doctypes = _ref$doctypes === undefined ? [] : _ref$doctypes;
+	
+	  if (typeof PouchDB === 'undefined') throw new Error('Missing pouchdb dependency for offline mode. Please run "yarn add pouchdb" and provide PouchDB as a webpack plugin.');
+	  if (typeof pouchdbFind === 'undefined') throw new Error('Missing pouchdb-find dependency for offline mode. Please run "yarn add pouchdb-find" and provide pouchdbFind as webpack plugin.');
 	  var _iteratorNormalCompletion = true;
 	  var _didIteratorError = false;
 	  var _iteratorError = undefined;
@@ -8852,7 +9011,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 	
 	  if (!pluginLoaded) {
-	    _pouchdb2.default.plugin(_pouchdbFind2.default);
+	    PouchDB.plugin(pouchdbFind);
 	    pluginLoaded = true;
 	  }
 	
@@ -8860,7 +9019,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return Promise.resolve(getDatabase(cozy, doctype));
 	  }
 	
-	  setDatabase(cozy, doctype, new _pouchdb2.default(doctype, options));
+	  setDatabase(cozy, doctype, new PouchDB(doctype, options));
 	  return createIndexes(cozy, doctype).then(function () {
 	    return getDatabase(cozy, doctype);
 	  });
@@ -8940,17 +9099,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return reject(new Error('You can\'t use `live` option with Cozy couchdb.'));
 	    }
 	
+	    if ((0, _utils.isOffline)()) {
+	      reject(replicationOfflineError);
+	      options.onError && options.onError(replicationOfflineError);
+	      return;
+	    }
+	
 	    getReplicationUrl(cozy, doctype).then(function (url) {
 	      return setReplication(cozy, doctype, getDatabase(cozy, doctype).replicate.from(url, options).on('complete', function (info) {
 	        setReplication(cozy, doctype, undefined);
 	        resolve(info);
 	        options.onComplete && options.onComplete(info);
 	      }).on('error', function (err) {
-	        console.warn('ReplicateFromCozy \'' + doctype + '\' Error:');
-	        console.warn(err);
-	        setReplication(cozy, doctype, undefined);
-	        reject(err);
-	        options.onError && options.onError(err);
+	        if (err.error === 'code=400, message=Expired token') {
+	          cozy.authorize().then(function (_ref2) {
+	            var client = _ref2.client,
+	                token = _ref2.token;
+	
+	            (0, _auth_v.refreshToken)(cozy, client, token).then(function (newToken) {
+	              return cozy.saveCredentials(client, newToken);
+	            }).then(function (credentials) {
+	              return replicateFromCozy(cozy, doctype, options);
+	            });
+	          });
+	        } else {
+	          console.warn('ReplicateFromCozy \'' + doctype + '\' Error:');
+	          console.warn(err);
+	          setReplication(cozy, doctype, undefined);
+	          reject(err);
+	          options.onError && options.onError(err);
+	        }
 	      }));
 	    });
 	  }));
@@ -9007,6 +9185,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	
 	  return setRepeatedReplication(cozy, doctype, setInterval(function () {
+	    if ((0, _utils.isOffline)()) {
+	      // network is offline, replication cannot be launched
+	      console.info(replicationOfflineError);
+	      return;
+	    }
 	    if (!hasReplication(cozy, doctype)) {
 	      replicateFromCozy(cozy, doctype, options);
 	      // TODO: add replicationToCozy
@@ -9035,19 +9218,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 203 */
-/***/ function(module, exports) {
-
-	module.exports = __WEBPACK_EXTERNAL_MODULE_203__;
-
-/***/ },
 /* 204 */
-/***/ function(module, exports) {
-
-	module.exports = __WEBPACK_EXTERNAL_MODULE_204__;
-
-/***/ },
-/* 205 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -9092,7 +9263,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 206 */
+/* 205 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';

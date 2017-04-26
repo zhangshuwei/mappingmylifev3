@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{.Locale}}">
     <head>
-       
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Mapping my life</title>
         <link rel="stylesheet" type="text/css" href="style/leaflet.css" />
         <link rel="stylesheet" type="text/css" href="style/bootstrap.min.css" />
@@ -24,17 +23,17 @@
         <!-- <script src="js/cozy-bar.min.js" defer></script> -->
     </head>
     <body>
-<!--         <nav class="navbar navbar-inverse">
-    <div class="container-fluid">
-    <div class="navbar-header">
-        <a class="navbar-brand" href="#">Mapping My Life</a>
-    </div>
-    <ul class="nav navbar-nav">
-        <li class="active"><a href="index.html">Home</a></li>
-        <li><a href="mostmode.html">Page 1</a></li>    
-    </ul>
-    </div>
-</nav> -->
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">Mapping My Life</a>
+            </div>
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="index.html">Home</a></li>
+                <li><a href="favoris.html">Page 1</a></li>    
+            </ul>
+        </div>
+    </nav>
     <div class="container-fluid">
         <div id="mapid"></div>
         <div class="layerSwitcher">
@@ -82,9 +81,15 @@
                 </div>     
             </div>
             <div class="row">
+                <div class="col-sm-10">
+                    <h5 id="error" style="color: red"></h5>
+                    <h5 id="success" style="color: green"></h5>  
+                </div>     
+            </div>
+            <div class="row">
                 <div class="col-sm-12">
                     
-                    <form class="form-inline" id="pointfavorisform">
+                    <form class="form" id="pointfavorisform">
                         <div class="form-group">
                             <label for="latitude">Latitude</label>
                             <input type="text" class="form-control" name="latitude" id="latitude">
@@ -94,7 +99,7 @@
                             <input type="text" class="form-control" name="longitude" id="longitude">    
                         </div>
                         <div class="form-group">
-                            <div class="radio radio-success radio-inline">
+                            <!-- <div class="radio radio-success radio-inline">
                                 <input type="radio" name="favoris" value="maison" id="maison">
                                 <label for="maison">Maison</label>
                             </div>
@@ -109,9 +114,24 @@
                             <div class="radio radio-success radio-inline">
                                 <input type="radio" name="favoris" value="marche" id="marche">
                                 <label for="marche">Marché</label>
+                            </div> -->
+                            <!-- onchange='CheckFavoris(this.value);' -->
+                            <label for="favoris">Choisir le type</label>
+                            <select class="form-control" name="favoris" id="selectfavoris" > 
+                                <option value="">Type</option>  
+                                <option value="maison">Maison</option>
+                                <option value="travail">Travail</option>
+                                <option value="sport">Sport</option>
+                                <option value="marche">Marché</option>
+                                <option value="others">Autres</option>
+                                
+                            </select>
+                            <div class="form-group">
+                                <input class="form-control" type="text" name="favoris" id="otherfavoris" style='display:none;'>
                             </div>
                         </div>
-                        <button class="btn btn-success btn-sm" id="submitForm">Submit</button>
+                        <button type="button" class="btn btn-success btn-sm" id="submitForm" onclick="addFavoris()">Ajouter</button>
+                        <button type="button" class="btn btn-danger btn-sm" id="deletePoint" onclick="deleteFavoris()">Supprimer</button>
                     </form>              
                 </div>
                 

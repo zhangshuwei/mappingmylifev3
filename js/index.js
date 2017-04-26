@@ -8,7 +8,9 @@
         dataAPI = "/data/",
         listDocsAPI = "/_all_docs?include_docs=true",
         GEOLOCITEM = "geoloc",
-        PHONECALLITEM = "phonecall";
+        PHONECALLITEM = "phonecall",
+        FAVORIS = "favoris",
+        SHOWALL = "showall";
 
 /*********************VARIABLES******************************
 ***********************************************************/
@@ -23,6 +25,7 @@
         phoneAggregate = [],
         APP,
         favorisPoints,
+        favorisId,
         markers = new L.featureGroup();
     var geoIcon = L.AwesomeMarkers.icon({
         icon: 'street-view',
@@ -52,6 +55,11 @@
     var sportIcon = L.AwesomeMarkers.icon({
         icon: 'futbol-o',
         markerColor: 'green',
+        prefix: 'fa'
+    });
+    var otherIcon = L.AwesomeMarkers.icon({
+        icon: 'star',
+        markerColor: 'darkpurple',
         prefix: 'fa'
     });
 
@@ -147,14 +155,29 @@
     /*console.log(window.cozy.client);
     console.log(window.cozy.bar);
     window.cozy.bar.init({appName: "Mon application"});*/
-    
-    
+
+/**********************************************************
+***********************************************************/    
+    function CheckFavoris(val) {
+
+        var element = document.getElementById('otherfavoris');
+        if (val == 'Choisir le type' || val == 'others')
+            element.style.display='block';
+        else  
+            element.style.display='none';
+    }  
 /**********************Initial Data***********************
 ***********************************************************/    
     function init() {
         initBind();
+        var t0 = performance.now();
         getGeoPoint("dayByDayRadio");
+        var t1 = performance.now();
+        console.log("Call to getGeoPoint took " + (t1 - t0) + " milliseconds.");
         getPointFavoris();
+        var t2 = performance.now();
+        console.log("Call to getPointFavoris took " + (t2 - t1) + " milliseconds.");
+        console.log("Call to all took " + (t2 - t0) + " milliseconds.");
         
     }
 /***********************************************************
@@ -179,6 +202,14 @@
                 break;
         }
     });
+    $("#selectfavoris").change(function() {
+        var val = this.value;
+        var element = document.getElementById('otherfavoris');
+        if (val == 'Choisir le type' || val == 'others')
+            element.style.display='block';
+        else  
+            element.style.display='none';
+    })
     }
 /*** Fonction qui fait disparaitre le selecteur de date******
 ************************************************************/
@@ -210,7 +241,7 @@ function hideForm() {
 /**********************Get GeoPoint Data********************
 ***********************************************************/
     function getGeoPoint(mode) {
-        var getGeoPointURL = cozyOptions.cozyURL + dataAPI + geopointDoctype + listDocsAPI;
+        var getGeoPointURL = cozyOptions.cozyURL + dataAPI + geopointDoctype + listDocsAPI;     
         $.ajax(getGeoPointURL, {
             type: "GET",
             beforeSend: function(request) {
@@ -225,18 +256,20 @@ function hideForm() {
                     var geoPoints = data.rows;
                     for(var i = 0; i < geoPoints.length; i += 1) {
                         var item = createGeoItems(geoPoints[i].doc);
-                        geoItems.push(item);
-                        dataItems.push(item);
+                        if(item) {
+                            geoItems.push(item);
+                            dataItems.push(item);
+                        }
                     }   
                 }
                 getPhoneCommunicationLog(mode);
-                /*getPointFavoris();   */           
+                      
             },
             error: function() {
                 alert("Une erreur est survenue lors de la récupération des données, si le problème persiste contactez un administrateur.");
                 console.error("Error retrieving data from server");
             }
-        });     
+        })       
     }
 
 /**************Get honeCommunicationLog Data****************
@@ -256,13 +289,12 @@ function hideForm() {
                     var phoneCalls = data.rows;
                     for(var i = 0; i < phoneCalls.length; i += 1) {
                         var item = createPhoneItems(phoneCalls[i].doc);
-                        if(item.latitude != "NULL" && item.longitude != "NULl"){
+                        if(item && item.latitude != "NULL" && item.longitude != "NULl"){
                             phoneItems.push(item);
                             dataItems.push(item);
                         }
                     }   
                 }
-                
                 if(mode == "dayByDayRadio") {
                     initTimeLine();
                 }
@@ -282,6 +314,8 @@ function hideForm() {
 /**********************Get GeoPoint Data********************
 ***********************************************************/
     function getPointFavoris() {
+        document.getElementById('success').innerHTML = "";
+        document.getElementById('error').innerHTML = "";
         var getPointFavorisURL = cozyOptions.cozyURL + dataAPI + pointFavorisDoctype + listDocsAPI;
         $.ajax(getPointFavorisURL, {
             type: "GET",
@@ -292,21 +326,22 @@ function hideForm() {
             success: function(data) {
                 if(data && data.rows){
                     favorisPoints = new Map();
+                    favorisId = new Map();
                     var datas = data.rows;
                     for (var i = 0; i < datas.length; i++) {
                         if (datas[i].doc.hasOwnProperty("latitude") && datas[i].doc.hasOwnProperty("longitude") &&
-                            datas[i].doc.hasOwnProperty("favoris")) {
+                            datas[i].doc.hasOwnProperty("category")) {
                             var key = datas[i].doc.latitude + datas[i].doc.longitude;
-                            favorisPoints.set(key, datas[i].doc.favoris);
+                            favorisPoints.set(key, datas[i].doc.category);
+                            favorisId.set(key, datas[i].doc._id);
                         }
                     }
-
-                }
-                
+                }               
             },
             error: function(xhr, ajaxOptions, thrownError) {
                 if(xhr.status == 404) {
                     favorisPoints = new Map();
+                    favorisId = new Map();
                     // Initial data type pointFavoris 
                     cozy.client.data.create(pointFavorisDoctype, {});
                 }else{
@@ -375,29 +410,34 @@ function hideForm() {
 ************* @param value: item data****************/
     function createGeoItems(value) {
         var marker;
-        marker = value;
-        marker.start = value.timestamp.replace(/T|Z/g, " ");
-        marker.className = GEOLOCITEM;
-        marker.group = 0;
-        marker.title = '<div class="data-tooltip"><p>Position: (' + value.latitude +', '+  value.longitude + ')</p><p>Timestamp: '+ value.start +'</div>'
-        delete marker.timestamp;
-        return marker;   
+        if(value.hasOwnProperty('timestamp') && value.hasOwnProperty('latitude') && value.hasOwnProperty('longitude')){
+            marker = value;
+            marker.start = value.timestamp.replace(/T|Z/g, " ");
+            marker.className = GEOLOCITEM;
+            marker.group = 0;
+            marker.title = '<div class="data-tooltip"><p>Position: (' + value.latitude +', '+  value.longitude + ')</p><p>Timestamp: '+ value.start +'</div>'
+            delete marker.timestamp;
+            return marker
+        }
+        
     }
 
 /********Fonction create phoneCommunication item***********
 ******* @param value: item data***************************/
     function createPhoneItems(value) {
         var marker;
-        marker = value;
-        marker.start = value.timestamp.replace(/T|Z/g, " ");
-        marker.typeMessage = value.type;
-        marker.className = PHONECALLITEM;
-        marker.group = 1;
-        marker.title = '<div class="data-tooltip"><p>Numéro de contact: ' 
-                + value.partner+'</p><p>Type d\'appel: ' + value.typeMessage + '</p></div>'; 
-        delete marker.timestamp;
-        delete marker.type;
-        return marker;
+        if(value.hasOwnProperty('timestamp') && value.hasOwnProperty('latitude') && value.hasOwnProperty('longitude')){
+            marker = value;
+            marker.start = value.timestamp.replace(/T|Z/g, " ");
+            marker.typeMessage = value.type;
+            marker.className = PHONECALLITEM;
+            marker.group = 1;
+            marker.title = '<div class="data-tooltip"><p>Numéro de contact: ' 
+                    + value.partner+'</p><p>Type d\'appel: ' + value.typeMessage + '</p></div>'; 
+            delete marker.timestamp;
+            delete marker.type;
+            return marker;
+        }
         
     }
 
@@ -476,8 +516,8 @@ function hideForm() {
             }
         }
         removerExistMarker();
-        addGeoPoint(geoTab);
-        addPhonePoint(phoneTab);
+        displayGeoPoint(geoTab, SHOWALL);
+        displayPhonePoint(phoneTab, SHOWALL);
         /*console.log(phoneTab.length);*/
     }
 
@@ -524,149 +564,15 @@ function hideForm() {
         markers.clearLayers();
     }
 
-/******* Create PhoneCalls Marker ********************
-*****************************************************/
-    function addPhonePoint(phone) {
-        //console.log(phone);
-        for (var i = 0; i < phone.length; i++){
-            phoneInfo = phone[i];
-            var pointkey = phoneInfo.latitude.toString() + phoneInfo.longitude.toString();
-            if (favorisPoints.has(pointkey)) {
-                var favorisType = favorisPoints.get(pointkey);
-                var iconType;
-                switch(favorisType) {
-                    case "maison":
-                    iconType = homeIcon;
-                    break;
-                    case "travail":
-                    iconType = worklIcon;
-                    break;
-                    case "sport":
-                    iconType = sportIcon;
-                    break;
-                    case "marche":
-                    iconType = shopIcon;
-                    break;
-                }
-                marker = L.marker([phoneInfo.latitude, phoneInfo.longitude],{alt:phoneInfo.latitude.toString() + phoneInfo.longitude.toString(), icon: iconType});
-            }else{
-                marker = L.marker([phoneInfo.latitude, phoneInfo.longitude],{alt:phoneInfo.latitude.toString() + phoneInfo.longitude.toString(), icon: phoneIcon});
-            }
-            
-            markers.addLayer(marker).addTo(mymap);
-            phoneMarkers.push(marker);
-            /****** Creation des info de la popup *******/
-
-            if (phoneInfo.info.length != 1){
-                var strmulti = " <div class='titre'> Nombre de communications = "+phoneInfo.info.length+"</div><br>"+
-                      " <div id='info' style='display:none'>" 
-                var infoComm = "";
-                for (var l=0;  l<phoneInfo.info.length; l++){
-                    infoComm =  infoComm +
-                                '<div class="markerPopup">' + '<p>Numéro de contact: '+ phoneInfo.info[l].partner +
-                                '</p><p>Type d\'appel: '+ phoneInfo.info[l].typeMessage + 
-                                '</p><p>Temps : ' + phoneInfo.info[l].start +
-                                '</p><p hidden>Id: ' + phoneInfo.info[l].id +'</p></div>' 
-                }
-                str =   strmulti + infoComm +
-                        "</div>"+
-                        "<div id='showhide' onclick='showhide()' >afficher tout</div>";
-            } else {
-                str =  '<div class="markerPopup" id="info">'+ 
-                                '<p>Numéro de contact: '+ phoneInfo.info[0].partner +
-                                '</p><p>Type d\'appel: '+ phoneInfo.info[0].typeMessage + 
-                                '</p><p>Temps: ' + phoneInfo.info[0].start +
-                                '</p><p><p hidden>Id: ' + phoneInfo.info[0].id +'</p></div>'
-            }
-            marker.bindPopup(str);
-            var content = marker._popup.getContent();
-            marker.addEventListener('click',function(){
-                    var phoneContent = this._popup.getContent();
-                    var item_id= phoneContent.split('Id: ')[1].split('</p>')[0];
-                    timeline.setSelection(item_id, {focus:true});
-            },false);
-            
-        }
-    }
-
-/******* Create GeoPoints Marker *********************
-*****************************************************/
-    function addGeoPoint(geolocation) {
-        //console.log(geolocation);
-        for (var i = 0; i < geolocation.length; i++){
-            geoInfo = geolocation[i];
-            var pointkey = geoInfo.latitude.toString() + geoInfo.longitude.toString();
-            if (favorisPoints.has(pointkey)) {
-                var favorisType = favorisPoints.get(pointkey);
-                var iconType;
-                switch(favorisType) {
-                    case "maison":
-                    iconType = homeIcon;
-                    break;
-                    case "travail":
-                    iconType = worklIcon;
-                    break;
-                    case "sport":
-                    iconType = sportIcon;
-                    break;
-                    case "marche":
-                    iconType = shopIcon;
-                    break;
-                }
-                marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: iconType});
-            }else{
-                marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: geoIcon});
-            }
-            
-            geoMarkers.push(marker);
-            markers.addLayer(marker).addTo(mymap);
-            /****** Creation des info de la popup *******/
-
-            if (geoInfo.info.length != 1){
-                var strmulti = " <div class='titre'> Nombre de geolocations = "+ geoInfo.info.length + "</div><br>" +
-                      " <div id='info' style='display:none'>"
-                var infoComm = "";
-                for (var l=0;  l<geoInfo.info.length; l++){
-                    infoComm =  infoComm +
-                                '<div class="markerPopup">' + /*'Latitude: ' + geoInfo.latitude + 
-                                '<p>Longitude: '+ geoInfo.longitude + 
-                                '</p><p>Radius: ' + geoInfo.radius +
-                                '</p><p>Date: ' + geoInfo.info[l].start +
-                                '</p><p hidden>Id: ' + geoInfo.info[l].id +'</p></div><br>'*/
-                                '<p>Temps : ' + geoInfo.info[l].start +
-                                '</p><p hidden>Id: ' + geoInfo.info[l].id +'</p></div>'
-
-                }
-                str =   strmulti + infoComm +
-                        "</div>"+
-                        "<div id='showhide' onclick='showhide()' >afficher tout</div>";
-            } else {
-                str =  /*'<div>Latitude: ' + geoInfo.latitude + 
-                                '<br>Longitude: '+ geoInfo.longitude + 
-                                '<br>Radius: ' + geoInfo.radius +
-                                '<br>Date: ' + geoInfo.info[0].start +
-                                '<br><p hidden>Id: ' + geoInfo.info[0].id +'</p></div>'*/
-                                '<div class="markerPopup">Temps : ' + geoInfo.info[0].start +
-                                '<p hidden>Id: ' + geoInfo.info[0].id +'</p></div>'
-            }
-            marker.bindPopup(str);
-            marker.addEventListener('click',function(){
-
-                var geoContent = this._popup.getContent();
-                var item_id= geoContent.split('Id: ')[1].split('</p>')[0];
-                timeline.setSelection(item_id,{focus: true});
-            },false);
-        }
-    }
 /************Show Or Hide Marker Tooltip***************
 ******************************************************/
     function showhide(){
         if ($("#info").css('display') == "none"){
             $("#info").removeAttr('style');
-            $("#showhide").text("cacher tout");
+            $("#showhide").text("Cacher");
         }else {
              $("#info").css('display', 'none');
-             $("#showhide").text("afficher tout");
+             $("#showhide").text("Afficher");
         }
     }
 
@@ -773,17 +679,19 @@ function hideForm() {
         phoneAggregate = [];
         var geoInfoAgg = [];
         var phoneIngoAgg = [];
-        if(geoItems.length != 0) {
+        if (geoItems.length != 0) {
             for (var i = 0; i < geoItems.length; i++) {
                 geoInfoAgg = selectGeoInfoAggregate(geoItems[i]);
-                if(geoInfoAgg != null) {
-                     geoInfoAgg.push({start: geoItems[i].start, id: geoItems[i].id, itemType: GEOLOCITEM});                         
-                }else {
+                //console.log(geoInfoAgg);
+                if (geoInfoAgg != null) {
+                    geoInfoAgg.push({start: geoItems[i].start, id: geoItems[i]._id, itemType: GEOLOCITEM}); 
+                } else {
                     var item = createGeoMarker(geoItems[i]);
                     geoAggregate.push(item);
                 }    
             }
         }
+        //console.log(geoAggregate);
         if (phoneItems.length != 0) {
             for (var i = 0; i < phoneItems.length; i++) {
                 phoneIngoAgg = selectPhoneInfoAggregate(phoneItems[i]);
@@ -810,10 +718,12 @@ function hideForm() {
         var top5Phone = phoneAggregate.slice(0,5);
         
         removerExistMarker();
-        displayGeoPoint(top5Geo);
-        displayPhonePoint(top5Phone);
-        addFavoris();
-
+        displayGeoPoint(top5Geo, FAVORIS);
+        displayPhonePoint(top5Phone, FAVORIS);
+        /*addFavoris();*/
+        $("#latitude").prop("readonly", true);
+        $("#longitude").prop("readonly", true);
+        
  }
 
 /****Check Same Geo Aggregated Point*************
@@ -828,7 +738,9 @@ function hideForm() {
                 }
                 return geoAggregate[i].info;
             }
-        }  
+        //console.log(geoAggregate[i].info)
+        }
+
     }
 
 /****Check Same PhoneCalls Aggregated Point***********
@@ -845,92 +757,57 @@ function hideForm() {
 
 /******* Create GeoPoints Marker *********************
 *****************************************************/
-    function displayGeoPoint(geolocation) {
+    function displayGeoPoint(geolocation, mode) {
         for (var i = 0; i < geolocation.length; i++){
             geoInfo = geolocation[i];
+            var favorisType = null;
             var pointkey = geoInfo.latitude.toString() + geoInfo.longitude.toString();
             if (favorisPoints.has(pointkey)) {
-                var favorisType = favorisPoints.get(pointkey);
-                var iconType;
-                switch(favorisType) {
-                    case "maison":
-                    iconType = homeIcon;
-                    break;
-                    case "travail":
-                    iconType = worklIcon;
-                    break;
-                    case "sport":
-                    iconType = sportIcon;
-                    break;
-                    case "marche":
-                    iconType = shopIcon;
-                    break;
-                }
+                favorisType = favorisPoints.get(pointkey);
+                var iconType = selectfavorisType(favorisType);
                 marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: iconType});
             }else{
                 marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: geoIcon});
-            }
-            
+            }            
             geoMarkers.push(marker);
             markers.addLayer(marker).addTo(mymap);
             /****** Creation des info de la popup *******/
-
-            if (geoInfo.info.length != 1){
-                var strmulti = " <div class='titre'> Nombre de geolocations = "+ geoInfo.info.length + "</div><br>" +
-                      " <div id='info' style='display:none'>"
-                var infoComm = "";
-                for (var l=0;  l<geoInfo.info.length; l++){
-                    infoComm =  infoComm +
-                                '<div class="markerPopup"><p>Temps : ' + geoInfo.info[l].start +
-                                '</p><p hidden>Id: ' + geoInfo.info[l].id +'</p></div>'
-
-                }
-                str =   strmulti  + infoComm +
-                        "</div></div>"+
-                        "<div id='showhide' onclick='showhide()' >afficher tout</div>";
-            } else {
-                str =  '<div class="markerPopup"> '+
-                                '<p>Temps : ' + geoInfo.info[0].start +
-                                '<p hidden>Id: ' + geoInfo.info[0].id +'</p></div>'
-            }
-            
+            var str = createGeoPointPopup(geoInfo, favorisType);
             marker.bindPopup(str);
-            marker.addEventListener('click',function(e){
-                var target = e.target;
-                var latlgn = target._latlng;
-                var latitude = latlgn.lat;
-                var longitude = latlgn.lng;
-                $('#latitude').val(latitude);
-                $('#longitude').val(longitude);
-                $('#submitForm').prop('disabled', false);
-                var form = document.getElementById('pointfavorisform')                ;
-            },false);
+            if(mode == FAVORIS) {
+                marker.addEventListener('click',function(e){
+                    var target = e.target;
+                    var latlgn = target._latlng;
+                    var latitude = latlgn.lat;
+                    var longitude = latlgn.lng;
+                    $('#latitude').val(latitude);
+                    $('#longitude').val(longitude);
+                    $('#submitForm').prop('disabled', false);
+                    $('#deletePoint').prop('disabled', false);
+                    document.getElementById('success').innerHTML = "";
+                    document.getElementById('error').innerHTML = "";
+                    console.log(target);
+                },false);
+            } else {
+                marker.addEventListener('click',function(){
+                    var geoContent = this._popup.getContent();
+                    var item_id= geoContent.split('Id: ')[1].split('</p>')[0];
+                    timeline.setSelection(item_id,{focus: true});
+                },false);
+            }
         }
     }
 
 /******* Create PhoneCalls Marker ********************
 *****************************************************/
-    function displayPhonePoint(phone) {
+    function displayPhonePoint(phone, mode) {
         for (var i =0; i<phone.length; i++){
             phoneInfo = phone[i];
+            var favorisType = null;
             var pointkey = phoneInfo.latitude.toString() + phoneInfo.longitude.toString();
             if (favorisPoints.has(pointkey)) {
-                var favorisType = favorisPoints.get(pointkey);
-                var iconType;
-                switch(favorisType) {
-                    case "maison":
-                    iconType = homeIcon;
-                    break;
-                    case "travail":
-                    iconType = worklIcon;
-                    break;
-                    case "sport":
-                    iconType = sportIcon;
-                    break;
-                    case "marche":
-                    iconType = shopIcon;
-                    break;
-                }
+                favorisType = favorisPoints.get(pointkey);
+                var iconType = selectfavorisType(favorisType);
                 marker = L.marker([phoneInfo.latitude, phoneInfo.longitude],{alt:phoneInfo.latitude.toString() + phoneInfo.longitude.toString(), icon: iconType});
             }else{
                 marker = L.marker([phoneInfo.latitude, phoneInfo.longitude],{alt:phoneInfo.latitude.toString() + phoneInfo.longitude.toString(), icon: phoneIcon});
@@ -938,30 +815,10 @@ function hideForm() {
             markers.addLayer(marker).addTo(mymap);
             phoneMarkers.push(marker);
             /****** Creation des info de la popup *******/
-
-            if (phoneInfo.info.length != 1){
-                var strmulti = " <div class='titre'> Nombre de communications = "+phoneInfo.info.length+"</div><br>"+
-                      " <div id='info' style='display:none'>" 
-                var infoComm = "";
-                for (var l=0;  l<phoneInfo.info.length; l++){
-                    infoComm =  infoComm +
-                                '<div class="markerPopup">' + '<p>Numéro de contact: '+ phoneInfo.info[l].partner +
-                                '</p><p>Type d\'appel: '+ phoneInfo.info[l].typeMessage + 
-                                '</p><p>Temps : ' + phoneInfo.info[l].start +
-                                '</p><p hidden>Id: ' + phoneInfo.info[l].id +'</p></div>' 
-                }
-                str =   strmulti + infoComm +
-                        "</div>"+
-                        "<div id='showhide' onclick='showhide()' >afficher tout</div>";
-            } else {
-                str =  '<div class="markerPopup" id="info">'+ 
-                                '<p>Numéro de contact: '+ phoneInfo.info[0].partner +
-                                '</p><p>Type d\'appel: '+ phoneInfo.info[0].typeMessage + 
-                                '</p><p>Temps: ' + phoneInfo.info[0].start +
-                                '</p><p><p hidden>Id: ' + phoneInfo.info[0].id +'</p></div>'
-            }
+            var str = createPhonePopup(phoneInfo, favorisType);
             marker.bindPopup(str);
-            marker.addEventListener('click',function(e){
+            if(mode == FAVORIS) {
+                marker.addEventListener('click',function(e){
                 var target = e.target;
                 var latlgn = target._latlng;
                 var latitude = latlgn.lat;
@@ -969,33 +826,194 @@ function hideForm() {
                 $('#latitude').val(latitude);
                 $('#longitude').val(longitude);
                 $('#submitForm').prop('disabled',false);
-                var form = document.getElementById('pointfavorisform');              ;
+                document.getElementById('success').innerHTML = "";
+                document.getElementById('error').innerHTML = "";
+
                 },false);
+            } else {
+                marker.addEventListener('click',function(){
+                    var phoneContent = this._popup.getContent();
+                    var item_id= phoneContent.split('Id: ')[1].split('</p>')[0];
+                    timeline.setSelection(item_id, {focus:true});
+                },false);
+            }
+            
            
         }
     }
+/*********Add Point Favoris*******************************************/
+/*********************************************************************/    
     function addFavoris() {
-        $("#latitude").prop("readonly", true);
-        $("#longitude").prop("readonly", true);
-        var pointFavorisURL = cozyOptions.cozyURL + dataAPI + pointFavorisDoctype +"/";
-        $("#pointfavorisform").unbind('submit').bind('submit', function(){
-            event.preventDefault();
-            
-            $('#submitForm').prop('disabled',true);
-            
-            var point = {};
-            var latitude = $('#latitude').val();
-            var longitude = $('#longitude').val();
-            var favoris = $("#pointfavorisform :checked").val();
-            if(latitude.length != 0 && longitude.length != 0 && favoris != null){
-                point['latitude'] = latitude;
-                point['longitude'] = longitude;
-                point['favoris'] = favoris;
-                cozy.client.data.create(pointFavorisDoctype, point);
-
-                    console.log("add a point favoris");
+        document.getElementById('success').innerHTML = "";
+        document.getElementById('error').innerHTML = "";
+        var errorMessage = "";
+        var successMessage = "";      
+        
+        var point = {};
+        var latitude = $('#latitude').val();
+        var longitude = $('#longitude').val();
+        var favoris = $("#pointfavorisform :checked").val();
+        var pointkey = latitude + longitude;
+        if(favoris.length == 0 || favoris == "others") {
+            favoris = $("#otherfavoris").val()
+        }
+        if(latitude.length != 0 && longitude.length != 0 && favoris.length != 0 && favoris != "others"){
+            point['latitude'] = latitude;
+            point['longitude'] = longitude;
+            point['category'] = favoris;
+            cozy.client.data.create(pointFavorisDoctype, point)
+            .then(function (result) {
+                successMessage = "OK";
+                if(successMessage) {
+                    document.getElementById('success').innerHTML = successMessage;
                 }
+                favorisPoints.set(pointkey, favoris);
+                console.log(result);
+            })                
+            
+        } else {
+            errorMessage = "One of form field is invalid";
+        }
+        if(errorMessage) {
+            document.getElementById('error').innerHTML = errorMessage;
+        }
+        
+        console.log(favorisPoints);
+    }
+/*********Capitalize First Letter*************************************/
+/*********************************************************************/
+    function deleteFavoris() {
+        document.getElementById('success').innerHTML = "";
+        document.getElementById('error').innerHTML = "";
+        var errorMessage = "";
+        var successMessage = "";
+        var latitude = $('#latitude').val();
+        var longitude = $('#longitude').val();
+        var pointkey = latitude+longitude;
+        if(latitude.length == 0 || longitude.length == 0) {
+            errorMessage = "Don't forget to choose the point";
+        }
+        if(latitude.length != 0 && longitude.length != 0) {
+            if (favorisId.has(pointkey)) {
+                var pointId = favorisId.get(pointkey);
+                var itemDeleted = cozy.client.data.find(pointFavorisDoctype, pointId);
+                itemDeleted.then(function(result) {
+                    var deletedItem = cozy.client.data.delete(pointFavorisDoctype, result);
+                    deletedItem.then(function(result) {
+                       favorisPoints.delete(pointkey);
+                        favorisId.delete(pointkey);
+                        successMessage = "OK";
+                        if(successMessage) {
+                            document.getElementById('success').innerHTML = successMessage;
+                        }
+                    
+                    })
+                    }
+                );
+            } else {
+                 errorMessage = "The point you selecte is not your favoriate place";
+            }
+        }
+        if(errorMessage) {
+            document.getElementById('error').innerHTML = errorMessage;
+        }
+        
+    }
+/*********Capitalize First Letter*************************************/
+/*********************************************************************/
+    function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+/*********************************************************************/
+/*********************************************************************/
+    function selectfavorisType(favorisType) {
+        var iconType;
+        switch(favorisType) {
+            case "maison":
+                iconType = homeIcon;
+            break;
+            case "travail":
+                iconType = worklIcon;
+            break;
+            case "sport":
+                iconType = sportIcon;
+            break;
+            case "marche":
+                iconType = shopIcon;
+            break;
+            default:
+                iconType = otherIcon;
+        }
+        return iconType
+    }
+/*********************************************************************/
+/*********************************************************************/
+    function createPhonePopup(phoneInfo, favorisType) {
+        if (phoneInfo.info.length != 1){
+            if (favorisType == null) {
+                var strmulti = " <div class='titre'><h5>Nombre de communications = "+phoneInfo.info.length+"</h5></div><br>"+
+                      " <div id='info' style='display:none'>";
+            } else {
+                var strmulti = " <div class='titre'><h5> Nombre de communications = "+phoneInfo.info.length+"</h5><h5>Type de point = " +
+                capitalizeFirstLetter(favorisType) + "</h5></div><br>"+
+                      " <div id='info' style='display:none'>";
+            }
+            var infoComm = "";
+            for (var l=0;  l<phoneInfo.info.length; l++){
+                infoComm =  infoComm +
+                '<div class="markerPopup">' + '<p>Numéro de contact: '+ phoneInfo.info[l].partner +
+                '</p><p>Type d\'appel: '+ phoneInfo.info[l].typeMessage + 
+                '</p><p>Temps : ' + phoneInfo.info[l].start +
+                '</p><p hidden>Id: ' + phoneInfo.info[l].id +'</p></div>' 
+            }
+            var str =   strmulti + infoComm +
+                "</div>"+
+                "<button class = 'btn btn-success btn-sm' id='showhide' onclick='showhide()' >Afficher</button>";
+        } else {
+            var str =  '<div class="markerPopup" id="info">'+ 
+                '<p>Numéro de contact: '+ phoneInfo.info[0].partner +
+                '</p><p>Type d\'appel: '+ phoneInfo.info[0].typeMessage + 
+                '</p><p>Temps: ' + phoneInfo.info[0].start +
+                '</p><p><p hidden>Id: ' + phoneInfo.info[0].id +'</p></div>'
+        }
+        return str
+    }
+/*********************************************************************/
+/*********************************************************************/
+    function createGeoPointPopup(geoInfo, favorisType) {
 
-        });
-       
+        if (geoInfo.info.length != 1){
+           if (favorisType == null) {
+                var strmulti = " <div class='titre'><h5>Nombre de geolocations = " + geoInfo.info.length + "</h5></div>" +
+                      " <div id='info' style='display:none'>"
+            } else {
+                var strmulti = " <div class='titre'><h5> Nombre de geolocations = " + geoInfo.info.length + "</h5><h5>Type de point = " +
+                capitalizeFirstLetter(favorisType) + "</h5></div>" +
+                      " <div id='info' style='display:none'>"
+            }
+            var infoComm = "";
+            for (var l=0;  l<geoInfo.info.length; l++){
+                infoComm =  infoComm +
+                    '<div class="markerPopup">' + /*'Latitude: ' + geoInfo.latitude + 
+                    '<p>Longitude: '+ geoInfo.longitude + 
+                    '</p><p>Radius: ' + geoInfo.radius +
+                    '</p><p>Date: ' + geoInfo.info[l].start +
+                    '</p><p hidden>Id: ' + geoInfo.info[l].id +'</p></div><br>'*/
+                    '<p>Temps : ' + geoInfo.info[l].start +
+                    '</p><p hidden>Id: ' + geoInfo.info[l].id +'</p></div>'
+
+            }
+            var str =   strmulti + infoComm +
+                    "</div>"+
+                    "<button class = 'btn btn-success btn-sm' id='showhide' onclick='showhide()' >Afficher</button>";
+        } else {
+            var str =  /*'<div>Latitude: ' + geoInfo.latitude + 
+                    '<br>Longitude: '+ geoInfo.longitude + 
+                    '<br>Radius: ' + geoInfo.radius +
+                    '<br>Date: ' + geoInfo.info[0].start +
+                    '<br><p hidden>Id: ' + geoInfo.info[0].id +'</p></div>'*/
+                    '<div class="markerPopup">Temps : ' + geoInfo.info[0].start +
+                    '<p hidden>Id: ' + geoInfo.info[0].id +'</p></div>'
+        }
+        return str
     }
