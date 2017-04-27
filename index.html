@@ -23,7 +23,7 @@
         <!-- <script src="js/cozy-bar.min.js" defer></script> -->
     </head>
     <body>
-    <nav class="navbar navbar-inverse">
+    <!-- <nav class="navbar navbar-inverse">
         <div class="container-fluid">
             <div class="navbar-header">
                 <a class="navbar-brand" href="#">Mapping My Life</a>
@@ -33,7 +33,7 @@
                 <li><a href="favoris.html">Page 1</a></li>    
             </ul>
         </div>
-    </nav>
+    </nav> -->
     <div class="container-fluid">
         <div id="mapid"></div>
         <div class="layerSwitcher">
@@ -118,7 +118,7 @@
                             <!-- onchange='CheckFavoris(this.value);' -->
                             <label for="favoris">Choisir le type</label>
                             <select class="form-control" name="favoris" id="selectfavoris" > 
-                                <option value="">Type</option>  
+                                <option value="">Choisir le type</option>  
                                 <option value="maison">Maison</option>
                                 <option value="travail">Travail</option>
                                 <option value="sport">Sport</option>
@@ -130,8 +130,10 @@
                                 <input class="form-control" type="text" name="favoris" id="otherfavoris" style='display:none;'>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-success btn-sm" id="submitForm" onclick="addFavoris()">Ajouter</button>
-                        <button type="button" class="btn btn-danger btn-sm" id="deletePoint" onclick="deleteFavoris()">Supprimer</button>
+                        <button type="button" class="btn btn-success btn-sm" id="addPoint" onclick="addFavoris()"><span class="glyphicon glyphicon-plus"></span> Ajouter</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="modifyPoint" onclick="modifyFavoris()"><span class="glyphicon glyphicon-pencil"></span> Modifier</button>
+                        <button type="button" class="btn btn-danger btn-sm" id="deletePoint" onclick="deleteFavoris()"><span class="glyphicon glyphicon-trash"></span> Supprimer</button>
+
                     </form>              
                 </div>
                 

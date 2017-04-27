@@ -26,6 +26,8 @@
         APP,
         favorisPoints,
         favorisId,
+        top5Geo,
+        top5Phone,
         markers = new L.featureGroup();
     var geoIcon = L.AwesomeMarkers.icon({
         icon: 'street-view',
@@ -219,13 +221,13 @@ function hideDaySelector() {
 
 /*** Fonction qui fait apparaitre le selecteur de date*******
 ************************************************************/
-function displayDaySelector() {
+    function displayDaySelector() {
     document.getElementById('filter').style.display = "block";
 }
 
 /*** Fonction qui fait disparaitre le selecteur de date******
 ************************************************************/
-function displayForm() {
+    function displayForm() {
     /*document.getElementById('mostmode').style.display = "block";*/
     $('#mostmode').show();
     $('#pointfavorisform')[0].reset();
@@ -234,7 +236,7 @@ function displayForm() {
 
 /*** Fonction qui fait disparaitre le selecteur de date******
 ************************************************************/
-function hideForm() {
+    function hideForm() {
     $('#mostmode').hide();
     /*document.getElementById('mostmode').style.display = "none";*/
 }
@@ -516,8 +518,8 @@ function hideForm() {
             }
         }
         removerExistMarker();
-        displayGeoPoint(geoTab, SHOWALL);
-        displayPhonePoint(phoneTab, SHOWALL);
+        displayMarkers(geoTab, geoIcon, SHOWALL);
+        displayMarkers(phoneTab, phoneIcon, SHOWALL);
         /*console.log(phoneTab.length);*/
     }
 
@@ -675,6 +677,8 @@ function hideForm() {
 ************************************************************/
     
     function getAggregateData(geoItems, phoneItems) {
+        top5Geo = null;
+        top5Phone = null;
         geoAggregate = [];
         phoneAggregate = [];
         var geoInfoAgg = [];
@@ -714,12 +718,12 @@ function hideForm() {
             return b.info.length - a.info.length;
             }
         });
-        var top5Geo = geoAggregate.slice(0,5);
-        var top5Phone = phoneAggregate.slice(0,5);
+        top5Geo = geoAggregate.slice(0,5);
+        top5Phone = phoneAggregate.slice(0,5);
         
         removerExistMarker();
-        displayGeoPoint(top5Geo, FAVORIS);
-        displayPhonePoint(top5Phone, FAVORIS);
+        displayMarkers(top5Geo, geoIcon, FAVORIS);
+        displayMarkers(top5Phone, phoneIcon, FAVORIS);
         /*addFavoris();*/
         $("#latitude").prop("readonly", true);
         $("#longitude").prop("readonly", true);
@@ -757,17 +761,19 @@ function hideForm() {
 
 /******* Create GeoPoints Marker *********************
 *****************************************************/
-    function displayGeoPoint(geolocation, mode) {
-        for (var i = 0; i < geolocation.length; i++){
-            geoInfo = geolocation[i];
+    function displayMarkers(data, dataType, mode) {
+        var iconType;
+        for (var i = 0; i < data.length; i++){
+            geoInfo = data[i];
             var favorisType = null;
             var pointkey = geoInfo.latitude.toString() + geoInfo.longitude.toString();
             if (favorisPoints.has(pointkey)) {
                 favorisType = favorisPoints.get(pointkey);
-                var iconType = selectfavorisType(favorisType);
+                iconType = selectfavorisType(favorisType);
                 marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: iconType});
             }else{
-                marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: geoIcon});
+                iconType = dataType;
+                marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: iconType});
             }            
             geoMarkers.push(marker);
             markers.addLayer(marker).addTo(mymap);
@@ -782,11 +788,11 @@ function hideForm() {
                     var longitude = latlgn.lng;
                     $('#latitude').val(latitude);
                     $('#longitude').val(longitude);
-                    $('#submitForm').prop('disabled', false);
+                    $('#addPoint').prop('disabled', false);
                     $('#deletePoint').prop('disabled', false);
+                    $('#modifyPoint').prop('disabled', false);
                     document.getElementById('success').innerHTML = "";
                     document.getElementById('error').innerHTML = "";
-                    console.log(target);
                 },false);
             } else {
                 marker.addEventListener('click',function(){
@@ -798,57 +804,13 @@ function hideForm() {
         }
     }
 
-/******* Create PhoneCalls Marker ********************
-*****************************************************/
-    function displayPhonePoint(phone, mode) {
-        for (var i =0; i<phone.length; i++){
-            phoneInfo = phone[i];
-            var favorisType = null;
-            var pointkey = phoneInfo.latitude.toString() + phoneInfo.longitude.toString();
-            if (favorisPoints.has(pointkey)) {
-                favorisType = favorisPoints.get(pointkey);
-                var iconType = selectfavorisType(favorisType);
-                marker = L.marker([phoneInfo.latitude, phoneInfo.longitude],{alt:phoneInfo.latitude.toString() + phoneInfo.longitude.toString(), icon: iconType});
-            }else{
-                marker = L.marker([phoneInfo.latitude, phoneInfo.longitude],{alt:phoneInfo.latitude.toString() + phoneInfo.longitude.toString(), icon: phoneIcon});
-            }
-            markers.addLayer(marker).addTo(mymap);
-            phoneMarkers.push(marker);
-            /****** Creation des info de la popup *******/
-            var str = createPhonePopup(phoneInfo, favorisType);
-            marker.bindPopup(str);
-            if(mode == FAVORIS) {
-                marker.addEventListener('click',function(e){
-                var target = e.target;
-                var latlgn = target._latlng;
-                var latitude = latlgn.lat;
-                var longitude = latlgn.lng;
-                $('#latitude').val(latitude);
-                $('#longitude').val(longitude);
-                $('#submitForm').prop('disabled',false);
-                document.getElementById('success').innerHTML = "";
-                document.getElementById('error').innerHTML = "";
-
-                },false);
-            } else {
-                marker.addEventListener('click',function(){
-                    var phoneContent = this._popup.getContent();
-                    var item_id= phoneContent.split('Id: ')[1].split('</p>')[0];
-                    timeline.setSelection(item_id, {focus:true});
-                },false);
-            }
-            
-           
-        }
-    }
 /*********Add Point Favoris*******************************************/
 /*********************************************************************/    
     function addFavoris() {
         document.getElementById('success').innerHTML = "";
         document.getElementById('error').innerHTML = "";
         var errorMessage = "";
-        var successMessage = "";      
-        
+        var successMessage = "";       
         var point = {};
         var latitude = $('#latitude').val();
         var longitude = $('#longitude').val();
@@ -857,30 +819,86 @@ function hideForm() {
         if(favoris.length == 0 || favoris == "others") {
             favoris = $("#otherfavoris").val()
         }
-        if(latitude.length != 0 && longitude.length != 0 && favoris.length != 0 && favoris != "others"){
-            point['latitude'] = latitude;
-            point['longitude'] = longitude;
-            point['category'] = favoris;
-            cozy.client.data.create(pointFavorisDoctype, point)
-            .then(function (result) {
-                successMessage = "OK";
-                if(successMessage) {
-                    document.getElementById('success').innerHTML = successMessage;
-                }
-                favorisPoints.set(pointkey, favoris);
-                console.log(result);
-            })                
-            
-        } else {
-            errorMessage = "One of form field is invalid";
+        if(!favorisPoints.has(pointkey)) {
+            if(latitude.length != 0 && longitude.length != 0 && favoris.length != 0 && favoris != "others"){
+                point['latitude'] = latitude;
+                point['longitude'] = longitude;
+                point['category'] = favoris;
+                cozy.client.data.create(pointFavorisDoctype, point)
+                .then(function (result) {
+                    successMessage = "OK";
+                    if(successMessage) {
+                        document.getElementById('success').innerHTML = successMessage;
+                    }
+                    favorisPoints.set(pointkey, favoris);
+                    favorisId.set(pointkey, result._id);
+                    removerExistMarker();
+                    displayMarkers(top5Geo, geoIcon, FAVORIS);
+                    displayMarkers(top5Phone, phoneIcon, FAVORIS);
+                    $('#pointfavorisform')[0].reset();
+                    $('#addPoint').prop('disabled', true);
+                    $('#otherfavoris').hide();
+                    
+                });
+            } else {
+                errorMessage = "One of form field is invalid";
+            }
+        }else {
+            errorMessage = "This point is already is a favoris point";
+        }
+        
+        if(errorMessage) {
+            document.getElementById('error').innerHTML = errorMessage;
+        }
+        
+    }
+
+/*********Add Point Favoris*******************************************/
+/*********************************************************************/ 
+    function modifyFavoris() {
+        document.getElementById('success').innerHTML = "";
+        document.getElementById('error').innerHTML = "";
+        var errorMessage = "";
+        var successMessage = "";
+        var latitude = $('#latitude').val();
+        var longitude = $('#longitude').val();
+        var favoris = $("#pointfavorisform :checked").val();
+        var pointkey = latitude + longitude;
+        if(favoris.length == 0 || favoris == "others") {
+            favoris = $("#otherfavoris").val()
+        }
+        if(favorisId.has(pointkey)) {
+            if(latitude.length != 0 && longitude.length != 0 && favoris.length != 0 && favoris != "others"){
+                var modifyField = {category: favoris};
+                var modifyId = favorisId.get(pointkey)
+                cozy.client.data.updateAttributes(pointFavorisDoctype, modifyId, modifyField)
+                .then(function() {
+                    successMessage = "OK";
+                    if(successMessage) {
+                        document.getElementById('success').innerHTML = successMessage;
+                    }
+                    favorisPoints.set(pointkey, favoris);
+                    favorisId.set(pointkey, modifyId);
+                    removerExistMarker();
+                    displayMarkers(top5Geo, geoIcon, FAVORIS);
+                    displayMarkers(top5Phone, phoneIcon, FAVORIS);
+                    $('#modifyPoint').prop('disabled', true);
+                    $('#pointfavorisform')[0].reset();
+                    $('#otherfavoris').hide();
+                });
+            }else {
+                errorMessage = "One of form field is invalid";
+            }
+        }else {
+            errorMessage = "Please first add this point and then modify it "
         }
         if(errorMessage) {
             document.getElementById('error').innerHTML = errorMessage;
         }
         
-        console.log(favorisPoints);
     }
-/*********Capitalize First Letter*************************************/
+
+/*********Delete Point Favoris****************************************/
 /*********************************************************************/
     function deleteFavoris() {
         document.getElementById('success').innerHTML = "";
@@ -889,27 +907,29 @@ function hideForm() {
         var successMessage = "";
         var latitude = $('#latitude').val();
         var longitude = $('#longitude').val();
-        var pointkey = latitude+longitude;
+        var pointkey = latitude + longitude;
         if(latitude.length == 0 || longitude.length == 0) {
             errorMessage = "Don't forget to choose the point";
         }
         if(latitude.length != 0 && longitude.length != 0) {
             if (favorisId.has(pointkey)) {
                 var pointId = favorisId.get(pointkey);
-                var itemDeleted = cozy.client.data.find(pointFavorisDoctype, pointId);
-                itemDeleted.then(function(result) {
-                    var deletedItem = cozy.client.data.delete(pointFavorisDoctype, result);
-                    deletedItem.then(function(result) {
-                       favorisPoints.delete(pointkey);
+                cozy.client.data.find(pointFavorisDoctype, pointId)
+                .then(function(result) {
+                    cozy.client.data.delete(pointFavorisDoctype, result)
+                    .then(function(result) {
+                        favorisPoints.delete(pointkey);
                         favorisId.delete(pointkey);
+                        removerExistMarker();
+                        displayMarkers(top5Geo, geoIcon, FAVORIS);
+                        displayMarkers(top5Phone, phoneIcon, FAVORIS);
                         successMessage = "OK";
                         if(successMessage) {
                             document.getElementById('success').innerHTML = successMessage;
                         }
-                    
+                        $('#deletePoint').prop('disabled', true);
                     })
-                    }
-                );
+                });
             } else {
                  errorMessage = "The point you selecte is not your favoriate place";
             }
