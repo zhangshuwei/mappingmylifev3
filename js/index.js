@@ -273,6 +273,7 @@ function hideDaySelector() {
             }
         })       
     }
+    
 
 /**************Get honeCommunicationLog Data****************
 ***********************************************************/
@@ -841,10 +842,10 @@ function hideDaySelector() {
                     
                 });
             } else {
-                errorMessage = "One of form field is invalid";
+                errorMessage = "Un champ de formulaire n'est pas valide";
             }
         }else {
-            errorMessage = "This point is already is a favoris point";
+            errorMessage = "Ce point est déjà un point favoris";
         }
         
         if(errorMessage) {
@@ -887,10 +888,10 @@ function hideDaySelector() {
                     $('#otherfavoris').hide();
                 });
             }else {
-                errorMessage = "One of form field is invalid";
+                errorMessage = "Un champ de formulaire n'est pas valide";
             }
         }else {
-            errorMessage = "Please first add this point and then modify it "
+            errorMessage = "Veuillez d'abord ajouter ce point, puis le modifier"
         }
         if(errorMessage) {
             document.getElementById('error').innerHTML = errorMessage;
@@ -909,7 +910,7 @@ function hideDaySelector() {
         var longitude = $('#longitude').val();
         var pointkey = latitude + longitude;
         if(latitude.length == 0 || longitude.length == 0) {
-            errorMessage = "Don't forget to choose the point";
+            errorMessage = "N'oubliez pas de click le point";
         }
         if(latitude.length != 0 && longitude.length != 0) {
             if (favorisId.has(pointkey)) {
@@ -931,7 +932,7 @@ function hideDaySelector() {
                     })
                 });
             } else {
-                 errorMessage = "The point you selecte is not your favoriate place";
+                 errorMessage = "Le point que vous avez sélectionné n'est pas votre lieu préféré";
             }
         }
         if(errorMessage) {
