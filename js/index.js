@@ -31,12 +31,12 @@
         markers = new L.featureGroup();
     var geoIcon = L.AwesomeMarkers.icon({
         icon: 'street-view',
-        markerColor: 'orange',
+        markerColor: 'blue',
         prefix: 'fa'
     });
     var phoneIcon = L.AwesomeMarkers.icon({
         icon: 'phone',
-        markerColor: 'blue',
+        markerColor: 'orange',
         prefix: 'fa'
       });
     var homeIcon = L.AwesomeMarkers.icon({
@@ -777,9 +777,14 @@ function hideDaySelector() {
                 marker = L.marker([geoInfo.latitude, geoInfo.longitude],{alt:geoInfo.latitude.toString() + geoInfo.longitude.toString(), icon: iconType});
             }            
             geoMarkers.push(marker);
+            phoneMarkers.push(marker);
             markers.addLayer(marker).addTo(mymap);
             /****** Creation des info de la popup *******/
-            var str = createGeoPointPopup(geoInfo, favorisType);
+            if(dataType == geoIcon) {
+                var str = createGeoPointPopup(geoInfo, favorisType);
+            } else {
+                var str = createPhonePopup(geoInfo, favorisType);
+            }            
             marker.bindPopup(str);
             if(mode == FAVORIS) {
                 marker.addEventListener('click',function(e){
