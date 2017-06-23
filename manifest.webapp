@@ -1,6 +1,6 @@
 {
-  "name": "Mapping-My-Life",
-  "slug": "Mapping-My-Life",
+  "name": "mappingmylife",
+  "slug": "mappingmylife",
   "icon": "app-icon.svg",
   "description": "Hello world for Cozy v3",
   "source": "https://github.com/",
